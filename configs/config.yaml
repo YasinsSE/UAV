@@ -1,0 +1,8 @@
+path: C:\Users\Yasins\YOLOv8\UAV\data
+
+train: images/train # relative to path
+val: images/val # relative to path
+test: images/test # relative to path
+
+# Class Names
+names: ["iha"]
