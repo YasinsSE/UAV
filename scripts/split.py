@@ -7,9 +7,9 @@ from random import sample
 # Add Parser
 parser = argparse.ArgumentParser()
    
-parser.add_argument("--train", type=int, default=80, help="Percentage of train set")
-parser.add_argument("--validation", type=int, default=10, help="Percentage of validation set")
-parser.add_argument("--test", type=int, default=10, help="Percentage of test set")
+parser.add_argument("--train", type=int, default=90, help="Percentage of train set")
+parser.add_argument("--validation", type=int, default=5, help="Percentage of validation set")
+parser.add_argument("--test", type=int, default=5, help="Percentage of test set")
 parser.add_argument("--folder", type=str, default="img", help="Folder that contain image")
 parser.add_argument("--dest", type=str, default="img-dest", help="Destination")
 

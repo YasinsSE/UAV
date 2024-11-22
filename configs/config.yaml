@@ -1,8 +1,11 @@
-path: C:\Users\Yasins\YOLOv8\UAV\data
+path: C:/Users/Yasins/Desktop/UAV/splitted_dataset
 
 train: images/train # relative to path
 val: images/val # relative to path
 test: images/test # relative to path
 
-# Class Names
-names: ["iha"]
+# Number of classes
+nc: 1
+
+# Class names
+names: ['UAV']
