@@ -6,7 +6,7 @@ from datetime import datetime
 from ultralytics import YOLO
 
 # Predefined variables
-confidence_score = 0.2  # Confidence threshold for detections
+confidence_score = 0.3  # Confidence threshold for detections
 print(f"Confidence score: {confidence_score}")
 
 color_black = (0, 0, 0)
