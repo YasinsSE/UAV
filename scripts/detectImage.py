@@ -21,9 +21,9 @@ text_AK = "AK: Camera FoV"
 
 class_name = 'iha'
 
-image_path = "/Users/yasinyldrm/Coding/Python-PyCharm/UAV/data/inference/images/test-photo.png"
-model_path = "/Users/yasinyldrm/Coding/Python-PyCharm/UAV/models/trained/976.pt"
-save_dir = "/Users/yasinyldrm/Coding/Python-PyCharm/UAV/data/results/images/"
+image_path = "/Users/yasinyldrm/Coding/Python-PyCharm/UAV/data/inference/images/test-photo-back.jpeg"
+model_path = "/Users/yasinyldrm/Coding/Python-PyCharm/UAV/models/trained/best.pt"
+save_dir = "/Users/yasinyldrm/Coding/Python-PyCharm/UAV/runs/detect/results/images"
 os.makedirs(save_dir, exist_ok=True)
 
 # Generate a unique filename with timestamp

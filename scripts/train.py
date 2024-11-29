@@ -2,17 +2,8 @@
 
 import ultralytics
 from ultralytics import YOLO
-import cv2
-import numpy as np
-import matplotlib.pyplot as plt
-import imutils
 import os
-from glob import glob
-import shutil
-import time
-import seaborn as sns
-from PIL import Image
-import random
+
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
 

@@ -145,7 +145,7 @@ venv.bak/
 .dmypy.json
 dmypy.json
 
-# Pyre type checker
+# Pyre type checkers
 .pyre/
 
 # pytype static type analyzer
@@ -161,5 +161,7 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 /data/
+/dataset/
+/splitted_dataset/
 /.vscode/
-
+/models/

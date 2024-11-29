@@ -6,7 +6,7 @@ from datetime import datetime
 from ultralytics import YOLO
 
 # Predefined variables
-confidence_score = 0.6  # Confidence threshold for detections
+confidence_score = 0.2  # Confidence threshold for detections
 print(f"Confidence score: {confidence_score}")
 
 color_black = (0, 0, 0)
@@ -15,6 +15,7 @@ color_red = (0, 0, 255)
 color_gray = (50, 50, 50)
 color_yellow = (0, 255, 255)
 color_green = (0, 255, 0)
+target_box_color = color_red
 
 font = cv2.FONT_HERSHEY_SIMPLEX
 fps_font = cv2.FONT_HERSHEY_COMPLEX
@@ -27,18 +28,23 @@ text_AH = "AH: Lock Rectangle"
 text_AV = "AV: Strike Zone"
 text_AK = "AK: Camera FoV"
 
-class_name = 'iha'
+class_name = 'UAV'
 
-#video_path = "/Users/yasinyldrm/Coding/Python-PyCharm/UAV/data/inference/videos/test-video-mah.mp4"
-video_path = "/Users/yasinyldrm/Coding/Python-PyCharm/UAV/data/inference/videos/test_3840_2160_30fps.mp4"
-model_path = "/Users/yasinyldrm/Coding/Python-PyCharm/UAV/models/trained/976.pt"
-save_dir = "/Users/yasinyldrm/Coding/Python-PyCharm/UAV/data/results/videos/"
+#video_path = "/Users/yasinyldrm/Coding/Python-PyCharm/UAV/data/inference/videos/test_3840_2160_30fps.mp4"
+video_path = "/Users/yasinyldrm/Coding/Python-PyCharm/UAV/data/inference/videos/testervideo.mov"
+model_path = "/Users/yasinyldrm/Coding/Python-PyCharm/UAV/models/trained/best_yolo10m.pt"
+#model_path = "/Users/yasinyldrm/Coding/Python-PyCharm/UAV/models/trained/best_m50k_trained.pt"
+save_dir = "/Users/yasinyldrm/Coding/Python-PyCharm/UAV/runs/detect/results/videos/"
 os.makedirs(save_dir, exist_ok=True)
 # Generate a unique filename with timestamp
 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
 filename = f"{timestamp}_processed_uav_detection.mp4"
 save_path = os.path.join(save_dir, filename)
 
+log_dir = "/Users/yasinyldrm/Coding/Python-PyCharm/UAV/runs/detect/logs/"
+os.makedirs(log_dir, exist_ok=True)
+log_file = os.path.join(log_dir, f"{timestamp}_detection_log.txt")
+log = open(log_file, "w")
 
 # Load video
 cap = cv2.VideoCapture(video_path)
@@ -48,12 +54,12 @@ if not cap.isOpened():
     print("Error: Could not open video.")
     exit()
 
-# Get the original video dimensions
+# Get video properties
 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 fps = cap.get(cv2.CAP_PROP_FPS)
-print(f"Width: {width}, Height: {height}, Frames: {total_frames}")
+print(f"Width: {width}, Height: {height}, Frames: {total_frames}, FPS: {fps}")
 
 yellow_rect_x1 = int(0.25 * width)
 yellow_rect_y1 = int(0.10 * height)
@@ -67,56 +73,68 @@ out = cv2.VideoWriter(save_path, fourcc, fps, (width, height))
 
 model = YOLO(model_path)
 
+"""
+# Create a binary mask for locking
+mask = cv2.imread("mask.png", 0)  # Load a pre-defined mask image
+
+masked_frame = cv2.bitwise_and(frame, frame, mask=mask)
+results = model(masked_frame, verbose=False)[0]
+"""
+
 # Running video
-print("Processing is started")
-print(f"Current time is {datetime.now()}")
+print("Processing started at", datetime.now())
 while True:
     start = time.time()
 
     ret, frame = cap.read()
     if not ret:
+        print("Warning: Skipped a frame.")
         break
 
-    results = model(frame, verbose=False)[0]
+    results = model(frame, verbose=False, stream=True)
+    detected = False
 
-    # Extract bounding boxes, confidence scores, and class IDs
-    boxes = np.array(results.boxes.data.tolist())
-    for box in boxes:
-        x1, y1, x2, y2, score, class_id = box
-        x1, y1, x2, y2, class_id = int(x1), int(y1), int(x2), int(y2), int(class_id)
+    # Process each result
+    for result in results:
+        boxes = np.array(result.boxes.data.tolist())  # Get bounding boxes
+        if boxes.size > 0:
+            for box in boxes:
+                x1, y1, x2, y2, score, class_id = box
+                x1, y1, x2, y2, class_id = int(x1), int(y1), int(x2), int(y2), int(class_id)
 
-        if results.names[class_id] == 'iha' and score > confidence_score:
-            box_color = color_red
-            cv2.rectangle(frame, (x1, y1), (x2, y2), box_color, 5)
+                if result.names[class_id] == class_name and score > confidence_score:
 
-            score_text = f"{class_name}: {score * 100:.0f}%"
+                    detected = True
+                    log_message = f"Detected {class_name}: (x1: {x1}, y1: {y1}, x2: {x2}, y2: {y2}, score: {score:.2f})\n"
+                    log.write(log_message)
+                    log.flush()  # Ensure immediate save
 
-            label_size, baseLine = cv2.getTextSize(score_text, font, 2, 3)
-            background_top_left = (x1, y1 - label_size[1] - 5)
-            background_bottom_right = (x1 + label_size[0] + 5, y1 + baseLine - 20)
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), target_box_color, 3)
 
-            cv2.rectangle(frame, background_top_left, background_bottom_right, color_gray, cv2.FILLED)
+                    score_text = f"{class_name}: {score * 100:.1f}%"
+                    label_size, baseLine = cv2.getTextSize(score_text, font, 1, 2)
+                    background_top_left = (x1, y1 - label_size[1] - 5)
+                    background_bottom_right = (x1 + label_size[0] + 5, y1 + baseLine - 20)
 
-            text_loc = (x1 + 2, y1 - 3)
-            cv2.putText(frame, score_text, text_loc, font, 2, color_white, thickness=3)
+                    cv2.rectangle(frame, background_top_left, background_bottom_right, color_gray, cv2.FILLED)
 
-            text_loc_AH = (x1, y2 + 50)
-            cv2.putText(frame, text_AH, text_loc_AH, font, 1.5, color_black, thickness=3)
+                    text_loc = (x1 + 2, y1 - 3)
+                    cv2.putText(frame, score_text, text_loc, font, 2, color_white, thickness=3)
 
-    cv2.rectangle(frame, (yellow_rect_x1, yellow_rect_y1), (yellow_rect_x2, yellow_rect_y2), color_yellow, 6)
+                    text_loc_AH = (x1, y2 + 50)
+                    cv2.putText(frame, text_AH, text_loc_AH, font, 1.5, color_black, thickness=3)
+
+    if not detected:
+        print("No objects detected in this frame.")
 
     # text_loc_AV = (yellow_rect_x1+25, yellow_rect_y2 - 25)
-    text_loc_AV = (yellow_rect_x1 + int(width/120), yellow_rect_y2 - int(height/60))
+    text_loc_AV = (yellow_rect_x1 + int(width / 120), yellow_rect_y2 - int(height / 60))
     cv2.putText(frame, text_AV, text_loc_AV, font, 2.2, color_black, thickness=3)
 
     text_loc_AK = (30, height - 40)
     cv2.putText(frame, text_AK, text_loc_AK, font, 2.2, color_black, thickness=3)
 
-    # Get server time in milliseconds to display on the top-right of the video
-    timestamp = datetime.now().strftime('%H:%M:%S.%f')[:-4]
-    cv2.putText(frame, timestamp, (width - 400, 100), font, 2, color_white, thickness=3)
-
-    # Calculate FPS
+    # Calculate and display FPS
     end = time.time()
     fps_calc = 1 / (end - start)
     total_fps += fps_calc
@@ -124,22 +142,21 @@ while True:
     average_fps = total_fps / num_of_frame
     avg_fps = float(f"{average_fps:.2f}")
 
-    cv2.putText(frame, "Processed FPS: " + str(avg_fps), (50, 100), fps_font, 2, color_red, thickness=3)
-    cv2.putText(frame, "Actual FPS: " + str(int(fps)), (50, 180), fps_font, 2, color_red, thickness=3)
+    cv2.putText(frame, "Processed FPS: " + str(avg_fps), (50, 100), fps_font, 2, color_red, thickness=2)
+    cv2.putText(frame, "Actual FPS: " + str(int(fps)), (50, 180), fps_font, 2, color_red, thickness=2)
 
     # Write the frame to the output video
     out.write(frame)
     cv2.imshow("Processed Frame", frame)
 
-
-    if cv2.waitKey(20) & 0xFF == ord("q"):
+    if cv2.waitKey(1) & 0xFF == ord("q"):
         break
 
-print("Processing is finished")
-print("Current time is ", datetime.now())
 # Release resources
 cap.release()
 out.release()
 cv2.destroyAllWindows()
-
-print(f"Video is saved in {save_path} as {filename}")
+log.close()
+print(f"Logs saved to: {log_file}")
+print(f"Processing finished at {datetime.now()}")
+print(f"Video saved to: {save_path}")
